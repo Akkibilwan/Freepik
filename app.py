@@ -98,12 +98,22 @@ def generate_thumbnail_prompt(video_title):
 def get_freepik_images(query, model, num_results=3):
     headers = {"Authorization": f"Bearer {FREEPIK_API_KEY}"}
     params = {"query": query, "type": "photo", "model": model, "page": 1, "limit": num_results}
-    
-    response = requests.get(FREEPIK_API_URL, headers=headers, params=params)
 
+    response = requests.get(FREEPIK_API_URL, headers=headers, params=params)
+    
     if response.status_code == 200:
-        return response.json().get("data", [])
+        data = response.json().get("data", [])
+        if not data:
+            st.warning(f"❗ No images found for query: {query}. Trying alternative search terms...")
+            # Try modifying the query
+            query = "illustration background design"
+            params["query"] = query
+            response = requests.get(FREEPIK_API_URL, headers=headers, params=params)
+            if response.status_code == 200:
+                return response.json().get("data", [])
+        return data
     else:
+        st.error(f"❌ Freepik API Error: {response.status_code} - {response.text}")
         return None
 
 # Streamlit UI
@@ -161,7 +171,7 @@ if video_url:
                         with img_cols[i % 3]:
                             st.image(img["url"], caption=f"Variation {i+1}", use_column_width=True)
                 else:
-                    st.error("No images found! Try a different model or keyword.")
+                    st.error("No images found even with fallback query.")
         else:
             st.error("Unable to fetch video details. Please check the YouTube URL.")
     else:
