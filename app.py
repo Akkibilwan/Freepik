@@ -2,7 +2,6 @@ import streamlit as st
 import requests
 import json
 import googleapiclient.discovery
-from urllib.parse import urlparse, parse_qs
 
 # Load API keys from Streamlit secrets
 YOUTUBE_API_KEY = st.secrets["YOUTUBE_API_KEY"]
@@ -17,6 +16,10 @@ FREEPIK_API_URL = "https://api.freepik.com/v1/resources"
 
 # Initialize YouTube API client
 youtube = googleapiclient.discovery.build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=YOUTUBE_API_KEY)
+
+# Initialize session state for selected video
+if "selected_video" not in st.session_state:
+    st.session_state["selected_video"] = None
 
 # Function to get YouTube videos based on search query
 def search_youtube_videos(query, max_results=10):
@@ -119,35 +122,30 @@ if st.button("Search YouTube"):
             st.write(f"Showing results for: **{query}**")
             cols = st.columns(3)  # Create a 3-column layout
             
-            selected_video = None
             for index, video in enumerate(video_results):
                 with cols[index % 3]:  # Display thumbnails in a grid
                     st.image(video["thumbnail_url"], caption=f"{video['title']} ({video['views']} views, Outlier: {video['outlier_score']}x)", use_column_width=True)
                     if st.button(f"Select {index+1}", key=f"video_{index}"):
-                        selected_video = video
+                        st.session_state["selected_video"] = video  # Store selected video in session state
             
-            # Proceed to Freepik search
-            if selected_video:
-                st.write("### 🎨 Generate Similar Image from Freepik")
-                st.write(f"Selected video: **{selected_video['title']}**")
-                
-                # Choose Freepik AI Model
-                model_choice = st.selectbox("Select Freepik Model:", ["classic-fast", "mystic"])
-                num_images = st.number_input("Number of images (1-5):", min_value=1, max_value=5, value=3)
-                
-                if st.button("Generate Freepik Images"):
-                    images = get_freepik_images(selected_video["title"], model_choice, num_images)
-                    
-                    if images:
-                        st.write("### 🖼️ Freepik Generated Images")
-                        img_cols = st.columns(3)
-                        for i, img in enumerate(images):
-                            with img_cols[i % 3]:
-                                st.image(img["url"], caption=f"Generated Image {i+1}", use_column_width=True)
-                    else:
-                        st.error("No images found! Try a different model or keyword.")
+# Check if a video is selected
+if st.session_state["selected_video"]:
+    selected_video = st.session_state["selected_video"]
+    st.write("### 🎨 Generate Similar Image from Freepik")
+    st.write(f"Selected video: **{selected_video['title']}**")
+    
+    # Choose Freepik AI Model
+    model_choice = st.selectbox("Select Freepik Model:", ["classic-fast", "mystic"])
+    num_images = st.number_input("Number of images (1-5):", min_value=1, max_value=5, value=3)
+    
+    if st.button("Generate Freepik Images"):
+        images = get_freepik_images(selected_video["title"], model_choice, num_images)
+        
+        if images:
+            st.write("### 🖼️ Freepik Generated Images")
+            img_cols = st.columns(3)
+            for i, img in enumerate(images):
+                with img_cols[i % 3]:
+                    st.image(img["url"], caption=f"Generated Image {i+1}", use_column_width=True)
         else:
-            st.error("No YouTube videos found! Try a different keyword.")
-    else:
-        st.warning("Please enter a keyword to search.")
-
+            st.error("No images found! Try a different model or keyword.")
