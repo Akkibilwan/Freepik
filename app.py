@@ -9,8 +9,8 @@ YOUTUBE_API_KEY = st.secrets["YOUTUBE_API_KEY"]
 FREEPIK_API_KEY = st.secrets["FREEPIK_API_KEY"]
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 
-# OpenAI API Setup
-openai.api_key = OPENAI_API_KEY
+# Initialize OpenAI client
+client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 # YouTube API setup
 YOUTUBE_API_SERVICE_NAME = "youtube"
@@ -47,14 +47,16 @@ def get_youtube_video_details(video_id):
 # Function to generate a creative thumbnail prompt using OpenAI
 def generate_thumbnail_prompt(video_title):
     prompt = f"Generate a creative, eye-catching thumbnail concept for a YouTube video titled: '{video_title}'. The image should be highly engaging, vibrant, and suitable for attracting viewers."
-    
-    response = openai.ChatCompletion.create(
+
+    response = client.chat.completions.create(
         model="gpt-4",
-        messages=[{"role": "system", "content": "You are an AI that generates creative and engaging thumbnail descriptions for Freepik image generation."},
-                  {"role": "user", "content": prompt}]
+        messages=[
+            {"role": "system", "content": "You are an AI that generates creative and engaging thumbnail descriptions for Freepik image generation."},
+            {"role": "user", "content": prompt}
+        ]
     )
 
-    return response["choices"][0]["message"]["content"].strip()
+    return response.choices[0].message.content.strip()
 
 # Function to get AI-generated variations from Freepik
 def get_freepik_images(query, model, num_results=3):
@@ -69,7 +71,7 @@ def get_freepik_images(query, model, num_results=3):
         return None
 
 # Streamlit UI
-st.title("🎥 YouTube Thumbnail Variation Generator (AI + Freepik)")
+st.title("🎥 AI YouTube Thumbnail Variation Generator (OpenAI + Freepik)")
 
 # User input: YouTube video URL
 video_url = st.text_input("Enter YouTube video URL:")
