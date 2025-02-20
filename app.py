@@ -83,4 +83,19 @@ if video_url:
             # Number of images to generate
             num_images = st.number_input("Number of images (1-5):", min_value=1, max_value=5, value=3)
             
-            if st.button("Genera
+            # Button to generate images
+            if st.button("Generate AI Variations"):
+                images = get_freepik_images(user_prompt, model_choice, num_images)
+                
+                if images:
+                    st.write("### 🖼️ AI-Generated Variations")
+                    img_cols = st.columns(3)
+                    for i, img in enumerate(images):
+                        with img_cols[i % 3]:
+                            st.image(img["url"], caption=f"Variation {i+1}", use_column_width=True)
+                else:
+                    st.error("No images found! Try a different model or keyword.")
+        else:
+            st.error("Unable to fetch video details. Please check the YouTube URL.")
+    else:
+        st.error("Invalid YouTube URL! Please enter a valid video link.")
