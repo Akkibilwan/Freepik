@@ -81,4 +81,57 @@ def get_freepik_images(query, model, num_results=3):
 st.title("🎥 AI YouTube Thumbnail Generator (Stats + Custom Prompt)")
 
 # User input: YouTube video URL
-video_url = st.text
+video_url = st.text_input("Enter YouTube video URL:")
+
+if video_url:
+    # Extract video ID
+    video_id = extract_video_id(video_url)
+    
+    if video_id:
+        # Get video details
+        video_details = get_youtube_video_details(video_id)
+        
+        if video_details:
+            video_title = video_details["title"]
+            thumbnail_url = video_details["thumbnail_url"]
+
+            # Display video stats
+            st.write("### 🎬 Video Details")
+            st.image(thumbnail_url, caption=f"Thumbnail - {video_title}", use_column_width=True)
+            st.write(f"**📌 Title:** {video_details['title']}")
+            st.write(f"**📺 Channel:** {video_details['channel_name']}")
+            st.write(f"**👀 Views:** {video_details['views']}")
+            st.write(f"**👍 Likes:** {video_details['likes']}")
+            st.write(f"**💬 Comments:** {video_details['comments']}")
+            st.write(f"**📅 Published on:** {video_details['published_date']}")
+
+            # Generate AI thumbnail prompt
+            with st.spinner("Generating AI prompt for thumbnail..."):
+                ai_prompt = generate_thumbnail_prompt(video_title)
+
+            # Show generated AI prompt
+            st.write("### ✨ AI-Generated Prompt")
+            user_prompt = st.text_area("Modify the AI prompt before generating images:", ai_prompt)
+
+            # Choose Freepik AI Model
+            model_choice = st.selectbox("Select Freepik AI Model:", ["classic-fast", "mystic"])
+            
+            # Number of images to generate
+            num_images = st.number_input("Number of images (1-5):", min_value=1, max_value=5, value=3)
+            
+            # Button to generate images
+            if st.button("Generate AI Variations"):
+                images = get_freepik_images(user_prompt, model_choice, num_images)
+                
+                if images:
+                    st.write("### 🖼️ AI-Generated Variations")
+                    img_cols = st.columns(3)
+                    for i, img in enumerate(images):
+                        with img_cols[i % 3]:
+                            st.image(img["url"], caption=f"Variation {i+1}", use_column_width=True)
+                else:
+                    st.error("No images found! Try a different model or keyword.")
+        else:
+            st.error("Unable to fetch video details. Please check the YouTube URL.")
+    else:
+        st.error("Invalid YouTube URL! Please enter a valid video link.")
