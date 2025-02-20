@@ -114,11 +114,22 @@ def get_freepik_images(query, model, num_results=3):
 
     response = requests.get(FREEPIK_API_URL, headers=headers, params=params)
 
+    # Debug API response
+    st.write("🛠️ Freepik API Response:", response.status_code)
+    st.write("🔍 Response Content:", response.json())
+
     if response.status_code != 200:
         st.error(f"⚠️ Freepik API Error: {response.status_code} - {response.text}")
         return None
 
-    return response.json().get("data", [])
+    images = response.json().get("data", [])
+    
+    # Check if API response contains valid images
+    if not images or not isinstance(images, list) or "url" not in images[0]:
+        st.warning("⚠️ No valid images found in Freepik API response. Try modifying your prompt or using a different model.")
+        return None
+
+    return images
 
 # Streamlit UI
 st.title("🎥 AI YouTube Thumbnail Generator (Stats + Outlier Score)")
