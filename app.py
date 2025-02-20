@@ -9,6 +9,9 @@ YOUTUBE_API_KEY = st.secrets["YOUTUBE_API_KEY"]
 FREEPIK_API_KEY = st.secrets["FREEPIK_API_KEY"]
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 
+# Initialize OpenAI client
+client = openai.OpenAI(api_key=OPENAI_API_KEY)
+
 # Ensure API keys are provided
 if not FREEPIK_API_KEY:
     st.error("❌ Freepik API Key is missing! Add it in `.streamlit/secrets.toml` or Streamlit Cloud settings.")
@@ -86,7 +89,7 @@ def get_channel_avg_views(channel_id):
 def generate_thumbnail_prompt(video_title):
     prompt = f"Generate a creative, eye-catching thumbnail concept for a YouTube video titled: '{video_title}'. The image should be highly engaging, vibrant, and suitable for attracting viewers."
 
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": "You are an AI that generates creative and engaging thumbnail descriptions for Freepik image generation."},
