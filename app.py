@@ -140,7 +140,7 @@ if video_url:
             outlier_score = round(video_details["views"] / avg_views, 2) if avg_views > 0 else 1.0
 
             st.write("### 🎬 Video Details")
-            st.image(thumbnail_url, caption=f"Thumbnail - {video_title}", use_column_width=True)
+            st.image(thumbnail_url, caption=f"Thumbnail - {video_title}", use_container_width=True)
             st.write(f"**📌 Title:** {video_details['title']}")
             st.write(f"**📺 Channel:** {video_details['channel_name']}")
             st.write(f"**👀 Views:** {video_details['views']} (Outlier Score: {outlier_score}x)")
@@ -163,7 +163,7 @@ if video_url:
                     img_cols = st.columns(3)
                     for i, img in enumerate(images):
                         with img_cols[i % 3]:
-                            st.image(img["url"], caption=f"Variation {i+1}", use_column_width=True)
+                            st.image(img["url"], caption=f"Variation {i+1}", use_container_width=True)
                 else:
                     st.error("No images found. Try modifying the prompt or model.")
         else:
