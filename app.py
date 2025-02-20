@@ -44,12 +44,41 @@ def get_youtube_video_details(video_id):
             "title": snippet["title"],
             "thumbnail_url": snippet["thumbnails"]["maxres"]["url"] if "maxres" in snippet["thumbnails"] else snippet["thumbnails"]["high"]["url"],
             "channel_name": snippet["channelTitle"],
+            "channel_id": snippet["channelId"],
             "published_date": snippet["publishedAt"],
-            "views": stats.get("viewCount", "N/A"),
+            "views": int(stats.get("viewCount", 0)),
             "likes": stats.get("likeCount", "N/A"),
             "comments": stats.get("commentCount", "N/A"),
         }
     return None
+
+# Function to calculate average views of a channel
+def get_channel_avg_views(channel_id):
+    videos_request = youtube.search().list(
+        channelId=channel_id,
+        part="id",
+        order="date",
+        maxResults=10,
+        type="video"
+    )
+    videos_response = videos_request.execute()
+
+    total_views = 0
+    video_count = 0
+
+    for item in videos_response.get("items", []):
+        video_id = item["id"]["videoId"]
+        stats_request = youtube.videos().list(
+            id=video_id,
+            part="statistics"
+        )
+        stats_response = stats_request.execute()
+
+        views = int(stats_response["items"][0]["statistics"].get("viewCount", 0))
+        total_views += views
+        video_count += 1
+
+    return total_views / video_count if video_count > 0 else 0
 
 # Function to generate a creative thumbnail prompt using OpenAI
 def generate_thumbnail_prompt(video_title):
@@ -71,14 +100,14 @@ def get_freepik_images(query, model, num_results=3):
     params = {"query": query, "type": "photo", "model": model, "page": 1, "limit": num_results}
     
     response = requests.get(FREEPIK_API_URL, headers=headers, params=params)
-    
+
     if response.status_code == 200:
         return response.json().get("data", [])
     else:
         return None
 
 # Streamlit UI
-st.title("🎥 AI YouTube Thumbnail Generator (Stats + Custom Prompt)")
+st.title("🎥 AI YouTube Thumbnail Generator (Stats + Outlier Score)")
 
 # User input: YouTube video URL
 video_url = st.text_input("Enter YouTube video URL:")
@@ -95,21 +124,24 @@ if video_url:
             video_title = video_details["title"]
             thumbnail_url = video_details["thumbnail_url"]
 
+            # Calculate outlier score
+            avg_views = get_channel_avg_views(video_details["channel_id"])
+            outlier_score = round(video_details["views"] / avg_views, 2) if avg_views > 0 else 1.0
+
             # Display video stats
             st.write("### 🎬 Video Details")
             st.image(thumbnail_url, caption=f"Thumbnail - {video_title}", use_column_width=True)
             st.write(f"**📌 Title:** {video_details['title']}")
             st.write(f"**📺 Channel:** {video_details['channel_name']}")
-            st.write(f"**👀 Views:** {video_details['views']}")
+            st.write(f"**👀 Views:** {video_details['views']} (Outlier Score: {outlier_score}x)")
             st.write(f"**👍 Likes:** {video_details['likes']}")
             st.write(f"**💬 Comments:** {video_details['comments']}")
             st.write(f"**📅 Published on:** {video_details['published_date']}")
 
             # Generate AI thumbnail prompt
-            with st.spinner("Generating AI prompt for thumbnail..."):
-                ai_prompt = generate_thumbnail_prompt(video_title)
+            ai_prompt = generate_thumbnail_prompt(video_title)
 
-            # Show generated AI prompt
+            # Show generated AI prompt (User can modify)
             st.write("### ✨ AI-Generated Prompt")
             user_prompt = st.text_area("Modify the AI prompt before generating images:", ai_prompt)
 
@@ -119,7 +151,6 @@ if video_url:
             # Number of images to generate
             num_images = st.number_input("Number of images (1-5):", min_value=1, max_value=5, value=3)
             
-            # Button to generate images
             if st.button("Generate AI Variations"):
                 images = get_freepik_images(user_prompt, model_choice, num_images)
                 
